@@ -12,7 +12,7 @@ class FUCCIDataset(Dataset):
                  source_channels: tuple, target_channels: tuple, transform=None, img_transform=None):
         # TODO enable different file edings for source and target
         self.root_dir = os.path.join("/group/dl4miacourse/projects/FUCCI", root_dir) # the directory with all the training samples
-        self.video_files = os.listdir(os.path.join(self.root_dir, "Source"))  # list the videos
+        self.video_files = os.listdir(os.path.join(self.root_dir, "Source_small"))  # list the videos
         self.transform = (
             transform  # transformations to apply to both inputs and targets
         )
@@ -21,10 +21,12 @@ class FUCCIDataset(Dataset):
 
         self.img_transform = img_transform  # transformations to apply to raw image only
         #  transformations to apply just to inputs
-        inp_transforms = transforms.Compose(
+        self.inp_transforms = transforms.Compose(
             [
                 transforms.ToTensor(),
                 transforms.Normalize([0.0], [1.0]),  # 0 = mean and 1 = variance
+                
+               
             ]
         )
 
@@ -45,6 +47,8 @@ class FUCCIDataset(Dataset):
             if not n_frames_target == n_frames_source:
                 raise ValueError(f"Video {video_file_base} does not have "
                                   "the same frames in target and source")
+            
+
             self.open_videos.append(video)
             self.open_targets.append(target)
             self.frames_per_video.append(n_frames_source)
@@ -70,17 +74,15 @@ class FUCCIDataset(Dataset):
                 frame_idx = idx - (frames_seen - frames)
                 break
         # TODO wrap return_dims in functions
-        return_dims = "YX"
-        if isinstance(self.source_channels, tuple):
-            if len(self.source_channels) > 1:
-                return_dims = "CYX"
-        source_frames = self.open_videos[video_idx].get_image_data(return_dims, C=self.source_channels, T=frame_idx)
+        return_dims = "CYX"
+       
+        source_frames = self.open_videos[video_idx].get_image_dask_data(return_dims, C=self.source_channels, T=frame_idx).astype(float)
 
-        if isinstance(self.target_channels, tuple):
-            if len(self.target_channels) > 1:
-                return_dims = "CYX"
-
-        target_frames = self.open_targets[video_idx].get_image_data(return_dims, C=self.target_channels, T=frame_idx)
+        target_frames = self.open_targets[video_idx].get_image_dask_data(return_dims, C=self.target_channels, T=frame_idx).astype(float)
+        
+        source_frames = torch.from_numpy(source_frames.compute())
+        target_frames = torch.from_numpy(target_frames.compute())
+        
         if self.transform is not None:
             seed = torch.seed()
             torch.manual_seed(seed)
@@ -89,7 +91,7 @@ class FUCCIDataset(Dataset):
             target_frames = self.transform(target_frames)
         if self.img_transform is not None:
             source_frames = self.img_transform(source_frames)
-        return source_frames, target_frames
+        return source_frames.float(), target_frames.float()
 
         
         
