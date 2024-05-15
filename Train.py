@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import wandb
 
 def train(
     model,
@@ -55,6 +56,7 @@ def train(
         # backpropagate the loss and adjust the parameters
         loss.backward()
         optimizer.step()
+        wandb.log({"loss": loss.item()})
 
         # log to console
         if batch_id % log_interval == 0:
