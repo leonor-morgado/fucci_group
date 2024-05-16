@@ -16,32 +16,29 @@ import random
 
 # [optional] finish the wandb run, necessary in notebooks
 
-train_dataset = FUCCIDataset(root_dir="leonor", source_channels=0, target_channels=(0, 1), transform=transforms.RandomCrop(256)) #Do we need to crop? Guess also some data augmentation here would be nice
-train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=8) 
+train_dataset = FUCCIDataset(root_dir="leonor", source_channels=0, target_channels=0, transform=transforms.RandomCrop(256)) #Do we need to crop? Guess also some data augmentation here would be nice
+train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=8) 
 
-save_path = "/group/dl4miacourse/projects/FUCCI/leonor/Models/model1.pt"
+save_path = "/group/dl4miacourse/projects/FUCCI/leonor/Models/model_toxo.pt"
 
 
 ### Declare the U-Net and its parameters
 
-model = UNet(depth=2, in_channels=1, out_channels=2 )
-model_name = 'test1'
+model = UNet(depth=3, in_channels=1, out_channels=1 )
+model_name = 'model2'
 #TODO tensoboard logs
 #logger = SummaryWriter(f"unet_runs/{model_name}")
 
-optimizer = torch.optim.AdamW(model.parameters())
+optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
 loss_function: torch.nn.Module = torch.nn.MSELoss()
 start_time =time.time()
-n_epochs = 10
+n_epochs = 2000
 wandb.init(
     # set the wandb project where this run will be logged
-    project="fucci translation",
+    project="toxo",
 
     # track hyperparameters and run metadata
     config={
-    "learning_rate": 0.02,
-    "architecture": "CNN",
-    "dataset": "CIFAR-100",
     "epochs": n_epochs,
     }
 )

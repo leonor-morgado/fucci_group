@@ -11,8 +11,8 @@ class FUCCIDataset(Dataset):
     def __init__(self, root_dir,
                  source_channels: tuple, target_channels: tuple, transform=None, img_transform=None):
         # TODO enable different file edings for source and target
-        self.root_dir = os.path.join("/group/dl4miacourse/projects/FUCCI", root_dir) # the directory with all the training samples
-        self.video_files = os.listdir(os.path.join(self.root_dir, "Source_small"))  # list the videos
+        self.root_dir = "/group/dl4miacourse/projects/FUCCI/leonor/Toxo" # the directory with all the training samples
+        self.video_files = os.listdir(os.path.join(self.root_dir, "Source"))  # list the videos
         self.transform = (
             transform  # transformations to apply to both inputs and targets
         )
@@ -45,18 +45,20 @@ class FUCCIDataset(Dataset):
         for video_file_base in self.video_files:
             video_file = os.path.join(self.root_dir, "Source", video_file_base)
             target_file = os.path.join(self.root_dir, "Target", video_file_base)
+           
             video = AICSImage(video_file)
             target = AICSImage(target_file)
+          
             n_frames_source = video.dims.T
             n_frames_target = target.dims.T
             if not n_frames_target == n_frames_source:
                 raise ValueError(f"Video {video_file_base} does not have "
                                   "the same frames in target and source")
-            
-            video_mean = video.data.reshape(37, -1).mean(axis=1)
-            video_std = video.data.reshape(37, -1).std(axis=1)
-            target_mean = target.data.reshape(37, 2, -1).mean(axis=2)
-            target_std = target.data.reshape(37, 2, -1).std(axis=2)
+           
+            video_mean = video.data.reshape(video.data.shape[0], -1).mean(axis=1)
+            video_std = video.data.reshape(video.data.shape[0], -1).std(axis=1)
+            target_mean = target.data.reshape(video.data.shape[0], video.data.shape[1], -1).mean(axis=2)
+            target_std = target.data.reshape(video.data.shape[0], video.data.shape[1],-1).std(axis=2)
             
             self.source_mean.append(video_mean)
             self.source_std.append(video_std)
@@ -116,11 +118,44 @@ class FUCCIDataset(Dataset):
 
 
         if self.transform is not None:
+            
             seed = torch.seed()
             torch.manual_seed(seed)
+
             source_frames = self.transform(source_frames)
             torch.manual_seed(seed)
             target_frames = self.transform(target_frames)
+
+            ## mine 
+
+            # crop_std_ch1_thr = 0.47
+            # crop_std_ch2_thr = 0.38
+            # batch_found = False
+            # max_iter_limit = 100
+            # cur_iter = 0 
+            # while not batch_found:
+            #     seed = torch.seed()
+            #     torch.manual_seed(seed)
+            #     cur_iter += 1
+            #     source_frames = self.transform(source_frames)
+
+            #     torch.manual_seed(seed)
+            #     target_frames = self.transform(target_frames)
+            #     std_ch1 = target_frames[0].std()
+            #     std_ch2 = target_frames[1].std()
+            #     if cur_iter > max_iter_limit:
+            #         batch_found = True
+            #         # print("compromize")
+
+            #     if std_ch1 > crop_std_ch1_thr:
+            #         batch_found = True
+            #     if std_ch2 > crop_std_ch2_thr:
+            #         batch_found = True
+                    # print
+
+            # print("batch found")
+
+
         if self.img_transform is not None:
             source_frames = self.img_transform(source_frames)
         return source_frames.float(), target_frames.float()

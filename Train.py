@@ -51,7 +51,8 @@ def train(
             y = crop(y, prediction)
         if y.dtype != prediction.dtype:
             y = y.type(prediction.dtype)
-        loss = loss_function(prediction, y)
+        # loss = loss_function(prediction, y)
+        loss = loss_function(prediction.mean(dim=1), y.mean(dim=1))
 
         # backpropagate the loss and adjust the parameters
         loss.backward()
